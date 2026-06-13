@@ -1,28 +1,31 @@
 const nodemailer = require('nodemailer');
 require('dotenv').config();
 
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST,
-  port: process.env.SMTP_PORT,
-  secure: true, // true for 465, false for other ports
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
-  },
-});
-
 const sendEmail = async (options) => {
   try {
-    const mailOptions = {
-      from: `"FoodForAll" <${process.env.SMTP_USER}>`,
-      to: options.email,
-      subject: options.subject,
-      text: options.message,
-      html: options.html,
-    };
+    // We use Brevo (formerly Sendinblue) REST API to bypass Render's SMTP port blocking
+    const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'api-key': process.env.BREVO_API_KEY
+      },
+      body: JSON.stringify({
+        sender: { email: process.env.SMTP_USER, name: 'FoodForAll' },
+        to: [{ email: options.email }],
+        subject: options.subject,
+        htmlContent: options.html || options.message.replace(/\n/g, '<br>')
+      })
+    });
 
-    await transporter.sendMail(mailOptions);
-    console.log('Email sent successfully');
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error('Brevo API Error:', errorData);
+      throw new Error('Failed to send email via Brevo API');
+    }
+
+    console.log('Email sent successfully via Brevo API');
   } catch (error) {
     console.error('Error sending email:', error);
     throw new Error('Email could not be sent');
