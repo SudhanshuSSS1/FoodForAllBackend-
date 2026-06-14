@@ -22,7 +22,7 @@ const sendEmail = async (options) => {
     if (!response.ok) {
       const errorData = await response.json();
       console.error('Brevo API Error:', errorData);
-      throw new Error('Failed to send email via Brevo API');
+      throw new Error(`Brevo Error: ${errorData.message || JSON.stringify(errorData)}`);
     }
 
     console.log('Email sent successfully via Brevo API');
