@@ -193,7 +193,7 @@ exports.resetPassword = async (req, res) => {
 
 exports.login = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, role } = req.body;
 
     if (!email || !password) {
       return res.status(400).json({ message: 'Please provide email and password' });
@@ -209,6 +209,10 @@ exports.login = async (req, res) => {
 
     if (!isMatch) {
       return res.status(401).json({ message: 'Invalid credentials' });
+    }
+
+    if (role && user.role !== role) {
+      return res.status(403).json({ message: `Access denied. Please log in as a ${user.role === 'vendor' ? 'Food Vendor' : 'Community Member'}.` });
     }
 
     const token = signToken(user.id);
